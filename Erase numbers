@@ -1,0 +1,141 @@
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Erase Numbers',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: GameScreen(),
+    );
+  }
+}
+
+class GameScreen extends StatefulWidget {
+  @override
+  _GameScreenState createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  List<int> player1Numbers = [];
+  List<int> player2Numbers = [];
+  bool isPlayer1Turn = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeGame();
+  }
+
+  void _initializeGame() {
+    Random random = Random();
+    player1Numbers = List.generate(20, (_) => random.nextInt(10));
+    player2Numbers = List.generate(20, (_) => random.nextInt(10));
+  }
+
+  void _eraseNumber(int index, bool isPlayer1) {
+    setState(() {
+      if (isPlayer1) {
+        if (player1Numbers[index] == 0) {
+          // If zero is tapped, hide all numbers to the right of it.
+          for (int i = index; i < player1Numbers.length; i++) {
+            player1Numbers[i] = -1; // Set value to -1 to hide the number.
+          }
+        } else {
+          player1Numbers[index] = -1; // Set value to -1 to hide the number.
+        }
+      } else {
+        if (player2Numbers[index] == 0) {
+          for (int i = index; i < player2Numbers.length; i++) {
+            player2Numbers[i] = -1; // Set value to -1 to hide the number.
+          }
+        } else {
+          player2Numbers[index] = -1; // Set value to -1 to hide the number.
+        }
+      }
+      isPlayer1Turn = !isPlayer1Turn;
+      _checkGameOver();
+    });
+  }
+
+  void _checkGameOver() {
+    if (player1Numbers.every((n) => n == -1) || player2Numbers.every((n) => n == -1)) {
+      String winner = player1Numbers.every((n) => n == -1) ? "Player 2" : "Player 1";
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Game Over!"),
+          content: Text("$winner wins!"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _initializeGame();
+              },
+              child: Text("Play Again"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Erase Numbers"),
+      ),
+      body: Column(
+        children: [
+          Text(isPlayer1Turn ? "Player 1's Turn" : "Player 2's Turn"),
+          Expanded(
+            child: Column(
+              children: [
+                _buildNumberField(player1Numbers, true),
+                _buildNumberField(player2Numbers, false),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberField(List<int> numbers, bool isPlayer1) {
+    return Column(
+      children: [
+        Text(isPlayer1 ? "Player 1" : "Player 2"),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: numbers.asMap().entries.map((entry) {
+            int index = entry.key;
+            int number = entry.value;
+            return number != -1 // Check if the number is hidden
+                ? GestureDetector(
+                    onTap: () => _eraseNumber(index, isPlayer1),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black),
+                        borderRadius: BorderRadius.circular(4.0),
+                      ),
+                      child: Text(
+                        number.toString(),
+                        style: TextStyle(fontSize: 24),
+                      ),
+                    ),
+                  )
+                : SizedBox.shrink(); // If the number is hidden, display nothing
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
